@@ -1,84 +1,58 @@
-﻿namespace ReTrie.Memory
+﻿using System.Linq;
+
+namespace ReTrie.Memory
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading;
 
-    public class DefaultMemoryStrategy<TData, TValue> : IMemoryStrategy<TData, TValue>
+    public class DefaultMemoryStrategy<TValue, TData> : IMemoryStrategy<TValue, TData>
     {
-        private readonly long _id;
-        private readonly MemoryContext _context;
-        private int _count;
+        private readonly Lazy<IDictionary<Tuple<long, TValue>, ITrieNode<TData>>> _lazyStore =
+            new Lazy<IDictionary<Tuple<long, TValue>, ITrieNode<TData>>>(() =>
+                new Dictionary<Tuple<long, TValue>, ITrieNode<TData>>());
 
-        public int Count => _count;
+        public IDictionary<Tuple<long, TValue>, ITrieNode<TData>> Store => _lazyStore.Value;
 
         public DefaultMemoryStrategy()
-            : this(new MemoryContext())
         {
-            
         }
 
-        protected DefaultMemoryStrategy(MemoryContext context)
+        public ITrieNode<TData> Get(ITrieNode<TData> parent, TValue value)
         {
-            _context = context;
-            _id = context.NextId();
-        }
-
-        public ITrieNode<TData, TValue> Allocate(TData data)
-        {
-            var node = new DefaultTrieNode<TData, TValue>(new DefaultMemoryStrategy<TData, TValue>(_context));
-            _context.Store.Add(new Tuple<long, TData>(_id, data), node);
-            _count++;
+            var key = Key(parent, value);
+            ITrieNode<TData> node;
+            Store.TryGetValue(key, out node);
             return node;
         }
 
-        public ITrieNode<TData, TValue> Get(TData data)
+        public IEnumerable<KeyValuePair<TValue, ITrieNode<TData>>> Get(ITrieNode<TData> parent)
         {
-            var key = Tuple.Create(_id, data);
-            ITrieNode<TData, TValue> node;
-            _context.Store.TryGetValue(key, out node);
+            return Store
+                .Where(p => p.Key.Item1 == parent.Id)
+                .Select(p => new KeyValuePair<TValue, ITrieNode<TData>>(p.Key.Item2, p.Value));
+        }
+
+        public ITrieNode<TData> Set(ITrieNode<TData> parent, TValue value, ITrieNode<TData> child)
+        {
+            var key = Key(parent, value);
+            Store[key] = child;
+            return child;
+        }
+
+        public ITrieNode<TData> Remove(ITrieNode<TData> parent, TValue value)
+        {
+            var key = Key(parent, value);
+            ITrieNode<TData> node;
+            if (Store.TryGetValue(key, out node))
+            {
+                Store.Remove(key);
+            }
             return node;
         }
 
-        public bool Remove(TData data)
+        private static Tuple<long, TValue> Key(ITrieNode<TData> node, TValue value)
         {
-            var key = Tuple.Create(_id, data);
-            var success = _context.Store.Remove(key);
-            if (success)
-            {
-                _count--;
-            }
-            return success;
-        }
-
-        public IEnumerator<KeyValuePair<TData, ITrieNode<TData, TValue>>> GetEnumerator()
-        {
-            return _context.Store
-                .Where(p => p.Key.Item1 == _id)
-                .Select(p => new KeyValuePair<TData, ITrieNode<TData, TValue>>(p.Key.Item2, p.Value)).GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        protected class MemoryContext
-        {
-            private long _currentId;
-
-            private readonly Lazy<IDictionary<Tuple<long, TData>, ITrieNode<TData, TValue>>> _lazyStore =
-                new Lazy<IDictionary<Tuple<long, TData>, ITrieNode<TData, TValue>>>(() =>
-                    new Dictionary<Tuple<long, TData>, ITrieNode<TData, TValue>>());
-
-            public IDictionary<Tuple<long, TData>, ITrieNode<TData, TValue>> Store => _lazyStore.Value;
-
-            public long NextId()
-            {
-                return Interlocked.Increment(ref _currentId);
-            }
+            return Tuple.Create(node?.Id ?? 0, value);
         }
     }
 }

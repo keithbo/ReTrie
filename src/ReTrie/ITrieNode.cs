@@ -1,11 +1,9 @@
 ﻿namespace ReTrie
 {
-    public interface ITrieNode<TData, TValue>
+    public interface ITrieNode<TData>
     {
-        bool HasChildren { get; }
-        bool HasValue { get; }
-        TValue Value { get; set; }
-
-        ITrieNode<TData, TValue> AddOrGet(TData data);
+        long Id { get; }
+        bool HasData { get; }
+        TData Data { get; set; }
     }
 }

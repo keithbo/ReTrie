@@ -1,39 +1,27 @@
 ﻿namespace ReTrie.Memory
 {
-    internal class DefaultTrieNode<TData, TValue> : ITrieNode<TData, TValue>
+    internal class DefaultTrieNode<TData> : ITrieNode<TData>
     {
-        private readonly IMemoryStrategy<TData, TValue> _memory;
+        private bool _hasData;
+        private TData _data;
 
-        private bool _hasValue;
-        private TValue _value;
+        public long Id { get; }
 
-        public bool HasChildren => _memory.Count > 0;
+        public bool HasData => _hasData;
 
-        public bool HasValue => _hasValue;
-
-        public TValue Value
+        public TData Data
         {
-            get { return _value; }
+            get { return _data; }
             set
             {
-                _value = value;
-                _hasValue = !Equals(value, default(TValue));
+                _data = value;
+                _hasData = !Equals(value, default(TData));
             }
         }
 
-        public DefaultTrieNode()
+        public DefaultTrieNode(long id)
         {
+            Id = id;
         }
-
-        public DefaultTrieNode(IMemoryStrategy<TData, TValue> memory)
-        {
-            _memory = memory;
-        }
-
-        public ITrieNode<TData, TValue> AddOrGet(TData data)
-        {
-            return _memory.Get(data) ?? _memory.Allocate(data);
-        }
-
     }
 }

@@ -1,33 +1,39 @@
-﻿namespace ReTrie
+﻿using System.Threading;
+
+namespace ReTrie
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using ReTrie.Memory;
 
-    public class Trie<TData, TValue> : ITrie<TData>
+    public class Trie<TValue, TData> : ITrie<TValue>
     {
-        private readonly IMemoryStrategy<TData, TValue> _memory;
+        private long _currentNodeId;
+        private readonly IMemoryStrategy<TValue, TData> _memory;
+
+        private readonly Func<ITrieNode<TData>> _nodeFactory;
 
         public Trie()
-            : this(new DefaultMemoryStrategy<TData, TValue>())
+            : this(new DefaultMemoryStrategy<TValue, TData>())
         {
         }
 
-        public Trie(IMemoryStrategy<TData, TValue> memory)
+        public Trie(IMemoryStrategy<TValue, TData> memory)
         {
             _memory = memory;
+            _nodeFactory = () => new DefaultTrieNode<TData>(Interlocked.Increment(ref _currentNodeId));
         }
 
-        public void AddOrUpdate(IEnumerable<TData> sequence, TValue add, Func<TValue, TValue> update)
+        public void AddOrUpdate(IEnumerable<TValue> sequence, TData add, Func<TData, TData> update)
         {
             AddOrUpdate(sequence, () => add, update);
         }
 
-        public void AddOrUpdate(IEnumerable<TData> sequence, Func<TValue> add, Func<TValue, TValue> update)
+        public void AddOrUpdate(IEnumerable<TValue> sequence, Func<TData> add, Func<TData, TData> update)
         {
-            var target = sequence.Aggregate((ITrieNode<TData, TValue>)null, (n, d) => n != null ? n.AddOrGet(d) : _memory.Get(d) ?? _memory.Allocate(d));
-            target.Value = target.HasValue ? update(target.Value) : add();
+            var target = sequence.Aggregate((ITrieNode<TData>)null, (n, d) => _memory.Get(n, d) ?? _memory.Set(n, d, _nodeFactory()));
+            target.Data = target.HasData ? update(target.Data) : add();
         }
 
         public void Remove(IEnumerable<TData> sequence)

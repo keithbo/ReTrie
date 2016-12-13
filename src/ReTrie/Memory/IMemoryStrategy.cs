@@ -2,14 +2,14 @@
 {
     using System.Collections.Generic;
 
-    public interface IMemoryStrategy<TData, TValue> : IEnumerable<KeyValuePair<TData, ITrieNode<TData, TValue>>>
+    public interface IMemoryStrategy<TValue, TData>
     {
-        int Count { get; }
+        ITrieNode<TData> Get(ITrieNode<TData> parent, TValue value);
 
-        ITrieNode<TData, TValue> Allocate(TData data);
+        IEnumerable<KeyValuePair<TValue, ITrieNode<TData>>> Get(ITrieNode<TData> parent);
 
-        ITrieNode<TData, TValue> Get(TData data);
+        ITrieNode<TData> Set(ITrieNode<TData> parent, TValue value, ITrieNode<TData> child);
 
-        bool Remove(TData data);
+        ITrieNode<TData> Remove(ITrieNode<TData> parent, TValue value);
     }
 }
