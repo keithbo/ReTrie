@@ -36,9 +36,14 @@ namespace ReTrie
             target.Data = target.HasData ? update(target.Data) : add();
         }
 
-        public void Remove(IEnumerable<TData> sequence)
+        public void Remove(IEnumerable<TValue> sequence)
         {
-            
+            ITrieNode<TData> target = null;
+            foreach (var d in sequence)
+            {
+                target = _memory.Get(target, d);
+                if (target == null) return;// full sequence does not exist
+            }
         }
     }
 }
