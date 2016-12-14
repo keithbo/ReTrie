@@ -1,4 +1,4 @@
-﻿namespace ReTrie.Tests
+﻿namespace ReTrie
 {
     using System.IO;
     using Xunit;

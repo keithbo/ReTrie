@@ -38,12 +38,24 @@ namespace ReTrie
 
         public void Remove(IEnumerable<TValue> sequence)
         {
-            ITrieNode<TData> target = null;
+            var stack = new Stack<ITrieNode<TData>>();
+            ITrieNode<TData> prev = null;
             foreach (var d in sequence)
             {
-                target = _memory.Get(target, d);
-                if (target == null) return;// full sequence does not exist
+                prev = _memory.Get(prev, d);
+                if (prev == null) return;// full sequence does not exist
+                stack.Push(prev);
             }
+
+            if (stack.Count == 0) return;
+
+            stack.Peek().Data = default(TData);
+
+            do
+            {
+                var node = stack.Pop();
+
+            } while (stack.Count > 0);
         }
     }
 }
