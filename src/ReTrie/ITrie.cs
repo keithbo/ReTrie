@@ -3,16 +3,30 @@
     using System;
     using System.Collections.Generic;
 
-    public interface ITrie<TValue, TData>
+    public interface ITrie<TK, TV>
     {
-        void AddOrUpdate(IEnumerable<TValue> sequence, TData add, Func<TData, TData> update);
+        void AddOrUpdate(IEnumerable<TK> sequence, TV add, Func<TV, TV> update);
 
-        void AddOrUpdate(IEnumerable<TValue> sequence, Func<TData> add, Func<TData, TData> update);
+        void AddOrUpdate(IEnumerable<TK> sequence, Func<TV> add, Func<TV, TV> update);
 
-        void Remove(IEnumerable<TValue> sequence);
+        bool TryAdd(IEnumerable<TK> sequence, TV add);
 
-        bool Contains(IEnumerable<TValue> sequence);
+        bool TryUpdate(IEnumerable<TK> sequence, Func<TV, TV> update);
 
-        bool Contains(IEnumerable<TValue> sequence, bool includeDescendants);
+        void Set(IEnumerable<TK> sequence, TV value);
+
+        void Remove(IEnumerable<TK> sequence);
+
+        bool TryRemove(IEnumerable<TK> sequence);
+
+        bool TryRemove(IEnumerable<TK> sequence, Func<TV, bool> predicate);
+
+        bool Contains(IEnumerable<TK> sequence);
+
+        bool Contains(IEnumerable<TK> sequence, bool includeDescendants);
+
+        TV Get(IEnumerable<TK> sequence);
+
+        IEnumerable<KeyValuePair<IEnumerable<TK>, TV>> GetEnumerator(IEnumerable<TK> sequence);
     }
 }

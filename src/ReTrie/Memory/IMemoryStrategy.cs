@@ -1,15 +1,11 @@
 ﻿namespace ReTrie.Memory
 {
-    using System.Collections.Generic;
-
-    public interface IMemoryStrategy<TValue, TData>
+    public interface IMemoryStrategy<TK, TV>
     {
-        TrieNode<TValue, TData> Get(TrieNode<TValue, TData> parent, TValue value);
+        TrieNode<TK, TV> Get(TrieNode<TK, TV> parent, TK value);
 
-        IEnumerable<KeyValuePair<TValue, TrieNode<TValue, TData>>> Get(TrieNode<TValue, TData> parent);
+        TrieNode<TK, TV> Set(TrieNode<TK, TV> parent, TK value, TrieNode<TK, TV> child);
 
-        TrieNode<TValue, TData> Set(TrieNode<TValue, TData> parent, TValue value, TrieNode<TValue, TData> child);
-
-        void Remove(TrieNode<TValue, TData> parent, TValue value);
+        void Remove(TrieNode<TK, TV> parent, TK value);
     }
 }

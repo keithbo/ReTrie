@@ -2,29 +2,26 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.Serialization;
 
-    public class TrieNode<TValue, TData> : IEquatable<TrieNode<TValue, TData>>
+    [DataContract(Name = "TrieNode_{0}_{1}")]
+    public sealed class TrieNode<TK, TV> : IEquatable<TrieNode<TK, TV>>
     {
-        private static readonly IEnumerable<TValue> NoChildren = new TValue[0];
+        private static readonly IEnumerable<TK> NoChildren = new TK[0];
 
-        private bool _hasData;
-        private TData _data;
-        private List<TValue> _children;
+        [DataMember(Name = "Children", IsRequired = false, EmitDefaultValue = false, Order = 3)]
+        private List<TK> _children;
 
-        public long Id { get; }
+        [DataMember(Name = "Id", IsRequired = true, Order = 1)]
+        public long Id { get; private set; }
 
-        public bool HasData => _hasData;
+        [IgnoreDataMember]
+        public bool HasValue => !Equals(Value, default(TV));
 
-        public TData Data
-        {
-            get { return _data; }
-            set
-            {
-                _data = value;
-                _hasData = !Equals(value, default(TData));
-            }
-        }
+        [DataMember(Name = "Value", IsRequired = false, EmitDefaultValue = false, Order = 2)]
+        public TV Value { get; set; }
 
+        [IgnoreDataMember]
         public int ChildCount => _children?.Count ?? 0;
 
         public TrieNode(long id)
@@ -32,11 +29,11 @@
             Id = id;
         }
 
-        public void AddChild(TValue value)
+        public void AddChild(TK value)
         {
             if (_children == null)
             {
-                _children = new List<TValue> {value};
+                _children = new List<TK> {value};
             }
             else if (!_children.Contains(value))
             {
@@ -44,7 +41,7 @@
             }
         }
 
-        public void RemoveChild(TValue value)
+        public void RemoveChild(TK value)
         {
             if (_children != null && _children.Remove(value) && _children.Count == 0)
             {
@@ -52,19 +49,19 @@
             }
         }
 
-        public IEnumerable<TValue> GetChildren()
+        public IEnumerable<TK> GetChildren()
         {
             return _children ?? NoChildren;
         }
 
-        public bool Equals(TrieNode<TValue, TData> other)
+        public bool Equals(TrieNode<TK, TV> other)
         {
             return other != null && (ReferenceEquals(this, other) || Id == other.Id);
         }
 
         public override bool Equals(object obj)
         {
-            return Equals(obj as TrieNode<TValue, TData>);
+            return Equals(obj as TrieNode<TK, TV>);
         }
 
         public override int GetHashCode()

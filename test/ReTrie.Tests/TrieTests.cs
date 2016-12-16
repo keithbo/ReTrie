@@ -115,9 +115,9 @@
             var t = new Trie<char, int>();
             t.AddOrUpdate("word", 1, n => n + 1);
 
-            Assert.Equal(1, t.Find("word"));
-            Assert.Equal(0, t.Find("wor"));
-            Assert.Equal(0, t.Find("words"));
+            Assert.Equal(1, t.Get("word"));
+            Assert.Equal(0, t.Get("wor"));
+            Assert.Equal(0, t.Get("words"));
         }
 
         [Fact]
@@ -128,7 +128,7 @@
             t.AddOrUpdate("words", 1, n => n + 1);
             t.AddOrUpdate("wording", 1, n => n + 1);
 
-            var result = t.FindAll("word").ToArray();
+            var result = t.GetEnumerator("word").ToArray();
 
             Assert.NotNull(result);
             Assert.Equal(3, result.Length);

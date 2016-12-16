@@ -15,7 +15,8 @@
         "Microsoft.NETCore.App": {
           "type": "platform",
           "version": "1.0.0"
-        } 
+        },
+        "System.Runtime.Serialization.Xml": "4.3.0"
       }
     }
   }
