@@ -29,7 +29,7 @@
             Id = id;
         }
 
-        public void AddChild(TK value)
+        public bool AddChild(TK value)
         {
             if (_children == null)
             {
@@ -39,14 +39,22 @@
             {
                 _children.Add(value);
             }
+            else
+            {
+                return false;
+            }
+
+            return true;
         }
 
-        public void RemoveChild(TK value)
+        public bool RemoveChild(TK value)
         {
-            if (_children != null && _children.Remove(value) && _children.Count == 0)
+            var success = _children != null && _children.Remove(value);
+            if (success && _children.Count == 0)
             {
                 _children = null;
             }
+            return success;
         }
 
         public IEnumerable<TK> GetChildren()

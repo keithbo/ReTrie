@@ -1,40 +1,11 @@
 ﻿namespace ReTrie
 {
-    using System;
-    using System.IO;
     using System.Linq;
     using ReTrie.Memory;
     using Xunit;
 
     public class TrieTests
     {
-        [Fact]
-        public void LargeWordsMemoryTest()
-        {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            var before = System.Diagnostics.Process.GetCurrentProcess().WorkingSet64;
-
-            var t = new Trie<char, int>();
-
-            using (var f = File.OpenText("words.txt"))
-            {
-                while (!f.EndOfStream)
-                {
-                    var text = f.ReadLine();
-                    if (string.IsNullOrEmpty(text)) continue;
-                    t.AddOrUpdate(text, 1, n => n+1);
-                }
-            }
-
-            var after = System.Diagnostics.Process.GetCurrentProcess().WorkingSet64;
-            var diff = after - before;
-
-            Assert.NotEqual(0, diff);
-        }
-
         [Fact]
         public void AddOneAndRemoveOneTest()
         {
@@ -43,11 +14,11 @@
             var t = new Trie<char, int>(memory);
             t.AddOrUpdate("word", 1, n => n + 1);
 
-            Assert.Equal(4, memory.Store.Count);
+            Assert.Equal(4, memory.Nodes.Count);
 
             t.Remove("word");
 
-            Assert.Equal(0, memory.Store.Count);
+            Assert.Equal(0, memory.Nodes.Count);
         }
 
         [Fact]
@@ -59,11 +30,11 @@
             t.AddOrUpdate("words", 1, n => n + 1);
             t.AddOrUpdate("word", 1, n => n + 1);
 
-            Assert.Equal(5, memory.Store.Count);
+            Assert.Equal(5, memory.Nodes.Count);
 
             t.Remove("words");
 
-            Assert.Equal(4, memory.Store.Count);
+            Assert.Equal(4, memory.Nodes.Count);
 
             memory = new DefaultMemoryStrategy<char, int>();
 
@@ -71,11 +42,11 @@
             t.AddOrUpdate("word", 1, n => n + 1);
             t.AddOrUpdate("weird", 1, n => n + 1);
 
-            Assert.Equal(8, memory.Store.Count);
+            Assert.Equal(8, memory.Nodes.Count);
 
             t.Remove("word");
 
-            Assert.Equal(5, memory.Store.Count);
+            Assert.Equal(5, memory.Nodes.Count);
         }
 
         [Fact]
@@ -86,11 +57,11 @@
             var t = new Trie<char, int>(memory);
             t.AddOrUpdate("word", 1, n => n + 1);
 
-            Assert.Equal(4, memory.Store.Count);
+            Assert.Equal(4, memory.Nodes.Count);
 
             t.Remove("words");
 
-            Assert.Equal(4, memory.Store.Count);
+            Assert.Equal(4, memory.Nodes.Count);
         }
 
         [Fact]
@@ -110,7 +81,7 @@
         }
 
         [Fact]
-        public void FindTest()
+        public void GetTest()
         {
             var t = new Trie<char, int>();
             t.AddOrUpdate("word", 1, n => n + 1);
@@ -121,7 +92,7 @@
         }
 
         [Fact]
-        public void FindAllTest()
+        public void GetEnumeratorTest()
         {
             var t = new Trie<char, int>();
             t.AddOrUpdate("word", 1, n => n + 1);
@@ -129,6 +100,20 @@
             t.AddOrUpdate("wording", 1, n => n + 1);
 
             var result = t.GetEnumerator("word").ToArray();
+
+            Assert.NotNull(result);
+            Assert.Equal(3, result.Length);
+        }
+
+        [Fact]
+        public void GetEnumeratorPartialTest()
+        {
+            var t = new Trie<char, int>();
+            t.AddOrUpdate("word", 1, n => n + 1);
+            t.AddOrUpdate("words", 1, n => n + 1);
+            t.AddOrUpdate("wording", 1, n => n + 1);
+
+            var result = t.GetEnumerator("wo").ToArray();
 
             Assert.NotNull(result);
             Assert.Equal(3, result.Length);

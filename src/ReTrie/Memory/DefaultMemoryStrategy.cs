@@ -1,44 +1,53 @@
 ﻿namespace ReTrie.Memory
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
 
     public class DefaultMemoryStrategy<TK, TV> : IMemoryStrategy<TK, TV>
     {
-        private readonly Lazy<IDictionary<Tuple<TrieNode<TK, TV>, TK>, TrieNode<TK, TV>>> _lazyStore =
-            new Lazy<IDictionary<Tuple<TrieNode<TK, TV>, TK>, TrieNode<TK, TV>>>(() =>
-                new Dictionary<Tuple<TrieNode<TK, TV>, TK>, TrieNode<TK, TV>>());
+        private readonly ConcurrentDictionary<long, TrieNode<TK, TV>> _nodes = new ConcurrentDictionary<long, TrieNode<TK, TV>>();
+        private readonly ConcurrentDictionary<Tuple<long?, TK>, long> _relations = new ConcurrentDictionary<Tuple<long?, TK>, long>();
 
-        public IDictionary<Tuple<TrieNode<TK, TV>, TK>, TrieNode<TK, TV>> Store => _lazyStore.Value;
+        internal IDictionary<long, TrieNode<TK, TV>> Nodes => _nodes;
+        internal IDictionary<Tuple<long?, TK>, long> Relations => _relations;
 
-        public TrieNode<TK, TV> Get(TrieNode<TK, TV> parent, TK value)
+        public TrieNode<TK, TV> Get(long id)
         {
-            var key = Key(parent, value);
             TrieNode<TK, TV> node;
-            Store.TryGetValue(key, out node);
+            _nodes.TryGetValue(id, out node);
             return node;
         }
 
-        public TrieNode<TK, TV> Set(TrieNode<TK, TV> parent, TK value, TrieNode<TK, TV> child)
+        public long? Get(long? id, TK key)
         {
-            var key = Key(parent, value);
-            Store[key] = child;
-            parent?.AddChild(value);
-            return child;
+            long childId;
+            return _relations.TryGetValue(Tuple.Create(id, key), out childId) ? (long?)childId : null;
         }
 
-        public void Remove(TrieNode<TK, TV> parent, TK value)
+        public void Set(TrieNode<TK, TV> node)
         {
-            var key = Key(parent, value);
-            if (Store.Remove(key))
+            if (node != null)
             {
-                parent?.RemoveChild(value);
+                _nodes.AddOrUpdate(node.Id, node, (k, v) => node);
             }
         }
 
-        private static Tuple<TrieNode<TK, TV>, TK> Key(TrieNode<TK, TV> node, TK value)
+        public void Set(long? parentId, TK key, long childId)
         {
-            return Tuple.Create(node, value);
+            _relations.AddOrUpdate(Tuple.Create(parentId, key), childId, (k, v) => childId);
+        }
+
+        public void Remove(long id)
+        {
+            TrieNode<TK, TV> node;
+            _nodes.TryRemove(id, out node);
+        }
+
+        public void Remove(long? id, TK key)
+        {
+            long childId;
+            _relations.TryRemove(Tuple.Create(id, key), out childId);
         }
     }
 }

@@ -31,30 +31,22 @@
 
         public void AddOrUpdate(IEnumerable<TK> sequence, Func<TV> add, Func<TV, TV> update)
         {
-            var target = GetOrAddNode(sequence);
-            target.Value = target.HasValue ? update(target.Value) : add();
-        }
-
-        public bool TryAdd(IEnumerable<TK> sequence, TV add)
-        {
-            var target = GetOrAddNode(sequence);
-            if (target.HasValue) return false;
-            target.Value = add;
-            return true;
-        }
-
-        public bool TryUpdate(IEnumerable<TK> sequence, Func<TV, TV> update)
-        {
-            var target = FindInternal(sequence);
-            if (target == null || !target.HasValue) return false;
-            target.Value = update(target.Value);
-            return true;
+            AddOrUpdateInternal(sequence, target =>
+            {
+                var old = target.Value;
+                target.Value = target.HasValue ? update(target.Value) : add();
+                return !Equals(old, target.Value);
+            });
         }
 
         public void Set(IEnumerable<TK> sequence, TV value)
         {
-            var target = GetOrAddNode(sequence);
-            target.Value = value;
+            AddOrUpdateInternal(sequence, target =>
+            {
+                var old = target.Value;
+                target.Value = value;
+                return !Equals(old, target.Value);
+            });
         }
 
         public void Remove(IEnumerable<TK> sequence)
@@ -69,34 +61,52 @@
 
         public bool TryRemove(IEnumerable<TK> sequence, Func<TV, bool> predicate)
         {
-            var stack = new Stack<Tuple<TrieNode<TK, TV>, TK, TrieNode<TK, TV>>>();
+            var stack = new Stack<Frame>();
             TrieNode<TK, TV> previous = null;
             foreach (var d in sequence)
             {
-                var current = _memory.Get(previous, d);
-                if (current == null) return false;// full sequence does not exist
-                stack.Push(Tuple.Create(previous, d, current));
+                var currentId = _memory.Get(previous?.Id, d);
+                if (currentId == null) return false;// full sequence does not exist
+                var current = _memory.Get(currentId.Value);
+                stack.Push(new Frame { Parent = previous, Key = d, Child = current });
                 previous = current;
             }
 
             if (stack.Count == 0) return false;
 
             var success = false;
-            var target = stack.Peek().Item3;
-            if (target.HasValue && predicate(target.Value))
+            var frame = stack.Pop();
+            if (frame.Child.HasValue && predicate(frame.Child.Value))
             {
+                if (frame.Child.ChildCount == 0)
+                {
+                    if (frame.Parent != null && frame.Parent.RemoveChild(frame.Key))
+                    {
+                        _memory.Set(frame.Parent);
+                    }
+                    _memory.Remove(frame.Parent?.Id, frame.Key);
+                    _memory.Remove(frame.Child.Id);
+                }
+                else
+                {
+                    frame.Child.Value = default(TV);
+                    _memory.Set(frame.Child);
+                }
                 success = true;
-                target.Value = default(TV);
             }
 
-            do
+            while (stack.Count > 0)
             {
-                var frame = stack.Pop();
-                var node = frame.Item3;
-                if (node.HasValue || node.ChildCount > 0) break;//cannot remove any nodes that are part of a larger chain or still a valid leaf
-                _memory.Remove(frame.Item1, frame.Item2);
+                frame = stack.Pop();
+                if (frame.Child.HasValue || frame.Child.ChildCount > 0) break;//cannot remove any nodes that are part of a larger chain or still a valid leaf
 
-            } while (stack.Count > 0);
+                if (frame.Parent != null && frame.Parent.RemoveChild(frame.Key))
+                {
+                    _memory.Set(frame.Parent);
+                }
+                _memory.Remove(frame.Parent?.Id, frame.Key);
+                _memory.Remove(frame.Child.Id);
+            }
 
             return success;
         }
@@ -136,35 +146,90 @@
                 }
                 foreach (var c in t.Item2.GetChildren())
                 {
-                    var next = _memory.Get(t.Item2, c);
-                    if (next == null) continue;
+                    var nextId = _memory.Get(t.Item2.Id, c);
+                    if (!nextId.HasValue) continue;
 
-                    queue.Enqueue(Tuple.Create(Combine(t.Item1,c), next));
+                    queue.Enqueue(Tuple.Create(Combine(t.Item1,c), _memory.Get(nextId.Value)));
                 }
             }
 
         }
 
-        private TrieNode<TK, TV> GetOrAddNode(IEnumerable<TK> sequence)
+        private void AddOrUpdateInternal(IEnumerable<TK> sequence, Func<TrieNode<TK, TV>, bool> modify)
         {
-            return sequence.Aggregate((TrieNode<TK, TV>) null, (n, d) => _memory.Get(n, d) ?? _memory.Set(n, d, _nodeFactory()));
+            TrieNode<TK, TV> node = null;
+            long? nodeId = null;
+            foreach (var v in sequence)
+            {
+                //clear any previously tracked node, its not a leaf
+                if (node != null)
+                {
+                    _memory.Set(node);
+                    node = null;
+                }
+                //get next level
+                var childId = _memory.Get(nodeId, v);
+                //if level doesn't exist, add it
+                if (childId == null)
+                {
+                    node = _nodeFactory();
+                    _memory.Set(nodeId, v, node.Id);
+                    //if new level had a parent try and alter parent with new key value
+                    if (nodeId.HasValue)
+                    {
+                        var parent = _memory.Get(nodeId.Value);
+                        //only save node back if it actually added the child value
+                        if (parent.AddChild(v))
+                        {
+                            _memory.Set(parent);
+                        }
+                    }
+
+                    childId = node.Id;
+                }
+
+                nodeId = childId;
+            }
+
+            // if we are tracking a node it is an added leaf and must be saved
+            if (node != null)
+            {
+                modify?.Invoke(node);
+                _memory.Set(node);
+            }
+            // otherwise get the identified node by id if there is one
+            else if (nodeId.HasValue)
+            {
+                node = _memory.Get(nodeId.Value);
+                if (modify != null && modify(node))
+                {
+                    _memory.Set(node);
+                }
+            }
         }
 
         private TrieNode<TK, TV> FindInternal(IEnumerable<TK> sequence)
         {
-            TrieNode<TK, TV> target = null;
+            long? target = null;
             foreach (var d in sequence)
             {
                 target = _memory.Get(target, d);
                 if (target == null) break;// full sequence does not exist
             }
 
-            return target;
+            return target.HasValue ? _memory.Get(target.Value) : null;
         }
 
         private static TK[] Combine(IEnumerable<TK> array, TK single)
         {
             return array.Concat(new[] {single}).ToArray();
+        }
+
+        private class Frame
+        {
+            public TrieNode<TK, TV> Parent { get; set; }
+            public TK Key { get; set; }
+            public TrieNode<TK, TV> Child { get; set; }
         }
     }
 }

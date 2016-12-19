@@ -19,5 +19,9 @@
         "System.Runtime.Serialization.Xml": "4.3.0"
       }
     }
+  },
+
+  "buildOptions": {
+    "copyToOutput": [ "words.txt" ]
   }
 }
