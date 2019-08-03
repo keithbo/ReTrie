@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.438
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4D6F682A-3732-494A-952E-7D4CED89C6CD}"
 EndProject
@@ -10,11 +10,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		global.json = global.json
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ReTrie", "src\ReTrie\ReTrie.xproj", "{84240734-6D28-4594-918E-75DEF889B376}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ReTrie.Tests", "test\ReTrie.Tests\ReTrie.Tests.xproj", "{A56D1512-C675-47F1-A0EE-9EB61D56242F}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{126F9B95-FD97-4DBD-B309-9AF702B66E88}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReTrie", "src\ReTrie\ReTrie.csproj", "{84240734-6D28-4594-918E-75DEF889B376}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReTrie.Tests", "test\ReTrie.Tests\ReTrie.Tests.csproj", "{A56D1512-C675-47F1-A0EE-9EB61D56242F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,5 +37,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{84240734-6D28-4594-918E-75DEF889B376} = {4D6F682A-3732-494A-952E-7D4CED89C6CD}
 		{A56D1512-C675-47F1-A0EE-9EB61D56242F} = {126F9B95-FD97-4DBD-B309-9AF702B66E88}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7E3C8281-BE10-4F95-A935-53F5FDCAE3A0}
 	EndGlobalSection
 EndGlobal
