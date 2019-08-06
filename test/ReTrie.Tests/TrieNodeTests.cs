@@ -10,10 +10,7 @@
         [Fact]
         public void SerializationTest()
         {
-            var testObject = new TrieNode<char, int>(1)
-            {
-                Value = 101
-            };
+            var testObject = new TrieNode<char, int>(1, 101, null);
 
             var serializer = new DataContractSerializer(testObject.GetType());
             using (var memory = new MemoryStream())

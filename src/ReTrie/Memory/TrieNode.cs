@@ -1,11 +1,11 @@
 ﻿namespace ReTrie.Memory
 {
-    using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Runtime.Serialization;
 
     [DataContract(Name = "TrieNode_{0}_{1}")]
-    public sealed class TrieNode<TK, TV> : IEquatable<TrieNode<TK, TV>>
+    public sealed class TrieNode<TK, TV> : ITrieNode<TK, TV>
     {
         private static readonly IEnumerable<TK> NoChildren = new TK[0];
 
@@ -15,11 +15,14 @@
         [DataMember(Name = "Id", IsRequired = true, Order = 1)]
         public long Id { get; private set; }
 
+        [DataMember(Name = "Value", IsRequired = false, EmitDefaultValue = false, Order = 2)]
+        public TV Value { get; private set; }
+
         [IgnoreDataMember]
         public bool HasValue => !Equals(Value, default(TV));
 
-        [DataMember(Name = "Value", IsRequired = false, EmitDefaultValue = false, Order = 2)]
-        public TV Value { get; set; }
+        [IgnoreDataMember]
+        public IEnumerable<TK> Children => _children ?? NoChildren;
 
         [IgnoreDataMember]
         public int ChildCount => _children?.Count ?? 0;
@@ -29,37 +32,47 @@
             Id = id;
         }
 
-        public bool AddChild(TK value)
+        internal TrieNode(long id, TV value, List<TK> children)
+        {
+            Id = id;
+            Value = value;
+            _children = children;
+        }
+
+        public ITrieNode<TK, TV> SetValue(TV value)
+        {
+            return new TrieNode<TK, TV>(Id, value, _children?.ToList());
+        }
+
+        public ITrieNode<TK, TV> AddChild(TK child)
         {
             if (_children == null)
             {
-                _children = new List<TK> {value};
-            }
-            else if (!_children.Contains(value))
-            {
-                _children.Add(value);
-            }
-            else
-            {
-                return false;
+                return new TrieNode<TK, TV>(Id, Value, new List<TK> { child });
             }
 
-            return true;
+            if (!_children.Contains(child))
+            {
+                return new TrieNode<TK, TV>(Id, Value, _children.Concat(new [] { child }).ToList());
+            }
+
+            return this;
         }
 
-        public bool RemoveChild(TK value)
+        public ITrieNode<TK, TV> RemoveChild(TK child)
         {
-            var success = _children != null && _children.Remove(value);
-            if (success && _children.Count == 0)
+            if (_children == null)
             {
-                _children = null;
+                return this;
             }
-            return success;
-        }
 
-        public IEnumerable<TK> GetChildren()
-        {
-            return _children ?? NoChildren;
+            var children = _children.ToList();
+            if (!children.Remove(child))
+            {
+                return this;
+            }
+
+            return new TrieNode<TK, TV>(Id, Value, children.Count > 0 ? children : null);
         }
 
         public bool Equals(TrieNode<TK, TV> other)
